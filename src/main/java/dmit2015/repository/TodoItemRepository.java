@@ -1,22 +1,34 @@
 package dmit2015.repository;
 
 import dmit2015.entity.TodoItem;
+import dmit2015.security.TodoItemSecurityInterceptor;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.interceptor.Interceptors;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.security.enterprise.SecurityContext;
 import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
 @Transactional      // Every method in class requires a new transaction
+@Interceptors({TodoItemSecurityInterceptor.class})
 public class TodoItemRepository {
+
+    @Inject
+    private SecurityContext _securityContext;
 
     @PersistenceContext
     private EntityManager em;
 
     public void add(TodoItem newTodoItem) {
+        // Assign the current authenticated username for the username of the entity
+        String username = _securityContext.getCallerPrincipal().getName();
+        newTodoItem.setUsername(username);
+
         em.persist(newTodoItem);
     }
 
@@ -54,10 +66,22 @@ public class TodoItemRepository {
     }
 
     public List<TodoItem> findAll() {
-        return em.createQuery(
-                "SELECT ti FROM TodoItem ti"
-                , TodoItem.class)
-                .getResultList();
+        List<TodoItem> queryResultList;
+        // Return all TodoItem for the roles Executive
+        if (_securityContext.isCallerInRole("Executive")) {
+            queryResultList =  em.createQuery(
+                    "SELECT ti FROM TodoItem ti"
+                    , TodoItem.class).getResultList();
+
+        } else {    // Return TodoItem associated with the current authenticated user
+            String username = _securityContext.getCallerPrincipal().getName();
+            queryResultList =  em.createQuery(
+                    "SELECT ti FROM TodoItem ti WHERE ti.username = :usernameValue "
+                    , TodoItem.class)
+                    .setParameter("usernameValue", username)
+                    .getResultList();
+        }
+        return queryResultList;
     }
 
 }

@@ -25,6 +25,8 @@ public class MovieCreateController {
             _movieRepository.add(newMovie);
             Messages.addFlashGlobalInfo("Create was successful.");
             nextPage = "index?faces-redirect=true";
+        } catch (RuntimeException e) {
+            Messages.addGlobalInfo(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             Messages.addGlobalError("Create was not successful.");

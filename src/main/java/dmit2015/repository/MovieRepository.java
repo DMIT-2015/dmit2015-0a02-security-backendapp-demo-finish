@@ -1,22 +1,34 @@
 package dmit2015.repository;
 
 import dmit2015.entity.Movie;
+import dmit2015.security.MovieSecurityInterceptor;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.interceptor.Interceptors;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.security.enterprise.SecurityContext;
 import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
 @Transactional
+@Interceptors({MovieSecurityInterceptor.class})
 public class MovieRepository {
+
+    @Inject
+    private SecurityContext _securityContext;
 
     @PersistenceContext//(unitName = "h2database-jpa-pu")
     private EntityManager em;
 
     public void add(Movie newMovie) {
+        // Assign the current authenticated username for the username of the entity
+        String username = _securityContext.getCallerPrincipal().getName();
+        newMovie.setUsername(username);
+
         em.persist(newMovie);
     }
 
@@ -62,10 +74,22 @@ public class MovieRepository {
     }
 
     public List<Movie> findAll() {
-        return em.createQuery(
-                "SELECT m FROM Movie m "
-                , Movie.class)
-                .getResultList();
+        List<Movie> queryResultList = null;
+        // For the roles ROLE_USER and Sales return only Movie associated with the current authenticated user
+        if (_securityContext.isCallerInRole("ROLE_USER") || _securityContext.isCallerInRole("Sales") ) {
+            String username = _securityContext.getCallerPrincipal().getName();
+            queryResultList =  em.createQuery(
+                    "SELECT m FROM Movie m WHERE m.username = :usernameValue "
+                    , Movie.class)
+                    .setParameter("usernameValue", username)
+                    .getResultList();
+        } else {
+            queryResultList =  em.createQuery(
+                    "SELECT m FROM Movie m "
+                    , Movie.class)
+                    .getResultList();
+        }
+       return queryResultList;
     }
 
     public List<Movie> findAllOrderByTitle() {

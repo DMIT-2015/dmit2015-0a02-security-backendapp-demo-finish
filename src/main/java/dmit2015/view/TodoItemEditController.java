@@ -45,6 +45,8 @@ public class TodoItemEditController implements Serializable {
             _todoitemRepository.update(existingTodoItem);
             Messages.addFlashGlobalInfo("Update was successful.");
             nextPage = "index?faces-redirect=true";
+        } catch (RuntimeException e) {
+            Messages.addGlobalInfo(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             Messages.addGlobalError("Update was not successful.");
