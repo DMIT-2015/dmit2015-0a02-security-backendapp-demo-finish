@@ -2,6 +2,7 @@ package dmit2015.repository;
 
 import dmit2015.entity.Movie;
 import dmit2015.security.MovieSecurityInterceptor;
+import dmit2015.security.TodoItemSecurityInterceptor;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -15,7 +16,7 @@ import java.util.Optional;
 
 @ApplicationScoped
 @Transactional
-@Interceptors({MovieSecurityInterceptor.class})
+@Interceptors({TodoItemSecurityInterceptor.class, MovieSecurityInterceptor.class})
 public class MovieRepository {
 
     @Inject
